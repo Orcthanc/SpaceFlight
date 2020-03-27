@@ -15,11 +15,26 @@
  */
 
 #include "Util.hpp"
+#include "Application.hpp"
 
-#include <GLFW/glfw3.h>
+void setupLogging(){
+	logger.channel_to_string = Logger::channel_to_string;
+	logger.loglevel_to_string = []( size_t i ){ return Logger::level_to_string( static_cast<LogLevel::LogLevel>( i ));};
+
+	logger.enable( LogChannel::Default );
+	logger.enable( LogChannel::Video );
+}
 
 int main( int argc, char** argv ){
-	glfwInit();
+	setupLogging();
 
-	glfwTerminate();
+	logger << LogChannel::Default << LogLevel::Verbose << "Verbose test";
+	logger << LogChannel::Default << LogLevel::Info << "Info test";
+	logger << LogChannel::Default << LogLevel::Warning << "Warning test";
+	logger << LogChannel::Default << LogLevel::Error << "Error test";
+	logger << LogChannel::Default << LogLevel::Critical << "Critical test";
+
+	SpaceApplication app;
+
+	app();
 }

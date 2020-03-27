@@ -6,5 +6,7 @@ set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
 project( SpaceFlight )
 
+option( COLOR_CONSOLE "Enables colored console output" OFF )
+
 add_subdirectory( external )
 add_subdirectory( src )
