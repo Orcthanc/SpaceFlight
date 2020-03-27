@@ -1,0 +1,6 @@
+[submodule "external/ConfigParser"]
+	path = external/ConfigParser
+	url = git@github.com:Orcthanc/ConfigParser.git
+[submodule "external/Logger"]
+	path = external/Logger
+	url = git@github.com:Orcthanc/Logger.git
