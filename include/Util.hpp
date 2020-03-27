@@ -1,25 +1,22 @@
 /*
  * =====================================================================================
  *
- *       Filename:  main.cpp
+ *       Filename:  Util.hpp
  *
- *    Description:  Entry point
+ *    Description:  Contains useful includes, functions, globals, etc
  *
  *        Version:  1.0
- *        Created:  03/27/2020 08:59:03 PM
+ *        Created:  03/27/2020 09:07:49 PM
  *       Revision:  none
  *
  *         Author:  Samuel Knoethig (), samuel@knoethig.net
  *
  * =====================================================================================
  */
+#pragma once
 
-#include "Util.hpp"
+#include <vector>
+#include <string>
 
-#include <GLFW/glfw3.h>
-
-int main( int argc, char** argv ){
-	glfwInit();
-
-	glfwTerminate();
-}
+#include "Logger.hpp"
+#include "Parser.hpp"
