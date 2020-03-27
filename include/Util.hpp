@@ -20,3 +20,20 @@
 
 #include "Logger.hpp"
 #include "Parser.hpp"
+
+// To be expanded
+enum class LogChannel {
+	Default,
+	Video,
+};
+
+namespace LogLevel {
+	// Numbers are subject to change
+	enum LogLevel {
+		Verbose = 0,
+		Info = 1,
+		Warning = 2,
+		Error = 3,
+		Critical = 4,
+	};
+}
