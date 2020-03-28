@@ -43,14 +43,14 @@ std::string Logger::level_to_string( LogLevel::LogLevel level ){
 		case Critical:
 			return "\033[1;31mCritical \033[0m";
 		default:
-			return "Unknown loglevel " + to_string( level ) + " encountered";
+			return "Unknown loglevel " + std::to_string( level ) + " encountered";
 	}
 #elif
 	switch( level ){
 		#define LOGLEVEL( a ) case a: return #a;
 		LOGLEVELS
 		default:
-			return "Unknown loglevel " + to_string( level ) + " encountered";
+			return "Unknown loglevel " + std::to_string( level ) + " encountered";
 	}
 #endif
 }

@@ -41,6 +41,7 @@ void SpaceApplication::init_vk(){
 	logger << LogChannel::Video << LogLevel::Info << "Started initialising Vulkan";
 
 	create_instance();
+	choose_physical_dev({});
 }
 
 void SpaceApplication::create_instance(){
@@ -56,7 +57,10 @@ void SpaceApplication::create_instance(){
 			lmsg << "\n\t" << l.layerName;
 	}
 
-	const std::vector<const char*> layers = { "VK_LAYER_LUNARG_standard_validation", "VK_LAYER_LUNARG_api_dump" };
+	const std::vector<const char*> layers = { 
+		"VK_LAYER_LUNARG_standard_validation", 
+//		"VK_LAYER_LUNARG_api_dump",
+	};
 #elif //NDEBUG
 	const std::vector<const char*> layers;
 #endif //NDEBUG
@@ -66,11 +70,61 @@ void SpaceApplication::create_instance(){
 	glfwExtensions = glfwGetRequiredInstanceExtensions( &glfwExtensionCount );
 
 	const std::vector<const char*> extensions( glfwExtensions, glfwExtensions + glfwExtensionCount );
+
+	auto av_exts = vk::enumerateInstanceExtensionProperties();
+	{
+		Logger::LoggerHelper lmsg = logger << LogChannel::Video << LogLevel::Verbose;
+		lmsg << "Available extensions:";
+
+		for( auto& l: av_exts )
+			lmsg << "\n\t" << l.extensionName;
+	}
+
 	vk::InstanceCreateInfo instance_cr_inf( {}, &appinfo, layers.size(), layers.data(), extensions.size(), extensions.data() );
 
 	instance = vk::createInstanceUnique( instance_cr_inf );
 
 	logger << LogChannel::Video << LogLevel::Info << "Created instance";
+}
+
+void SpaceApplication::choose_physical_dev( const std::vector<vk::ExtensionProperties>& required_exts ){
+	auto physical_devs{ instance->enumeratePhysicalDevices() };
+
+	size_t best_score = 0;
+	std::string best_name;
+
+	for( auto& phys_dev: physical_devs ){
+		size_t score = 0;
+		std::vector<vk::ExtensionProperties> exts = phys_dev.enumerateDeviceExtensionProperties();
+
+		bool supported = true;
+		for( auto& ext: required_exts ){
+			if( std::find( exts.begin(), exts.end(), ext ) == exts.end()){
+				supported = false;
+			}
+		}
+		if( !supported )
+			continue;
+
+		auto properties = phys_dev.getProperties();
+		if( properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu )
+			score += 50000;
+		else if( properties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu )
+			score += 5000;
+
+		score += properties.limits.maxImageDimension2D;
+
+		logger << LogChannel::Video << LogLevel::Verbose << "Found suitable physical device " <<
+			properties.deviceName << " with score " << score;
+
+		if( score > best_score ){
+			best_name = properties.deviceName;
+			best_score = score;
+			this->phys_dev = phys_dev;
+		}
+	}
+
+	logger << LogChannel::Video << LogLevel::Info << "Chose physical device " << best_name << " with score of " << best_score;
 }
 
 void SpaceApplication::main_loop(){

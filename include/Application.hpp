@@ -38,7 +38,9 @@ struct SpaceApplication {
 		void cleanup();
 
 		void create_instance();
+		void choose_physical_dev( const std::vector<vk::ExtensionProperties>& required_exts );
 
 		GLFWwindow* window;
 		vk::UniqueInstance instance;
+		vk::PhysicalDevice phys_dev;
 };
