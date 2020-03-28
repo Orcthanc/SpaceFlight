@@ -21,6 +21,8 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.hpp>
 
+#include "AppGraphics.hpp"
+
 /**
  *	Class representing the whole application
  */
@@ -39,6 +41,7 @@ struct SpaceApplication {
 
 		void create_instance();
 		void choose_physical_dev( const std::vector<vk::ExtensionProperties>& required_exts );
+		SpaceAppVideo::QueueFamilyIndices find_queue_families( vk::PhysicalDevice phys_dev );
 
 		GLFWwindow* window;
 		vk::UniqueInstance instance;

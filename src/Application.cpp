@@ -103,6 +103,11 @@ void SpaceApplication::choose_physical_dev( const std::vector<vk::ExtensionPrope
 				supported = false;
 			}
 		}
+
+		auto qfindices = find_queue_families( phys_dev );
+		if( !qfindices.complete() )
+			supported = false;
+
 		if( !supported )
 			continue;
 
@@ -125,6 +130,22 @@ void SpaceApplication::choose_physical_dev( const std::vector<vk::ExtensionPrope
 	}
 
 	logger << LogChannel::Video << LogLevel::Info << "Chose physical device " << best_name << " with score of " << best_score;
+}
+
+SpaceAppVideo::QueueFamilyIndices SpaceApplication::find_queue_families( vk::PhysicalDevice phys_dev ){
+	SpaceAppVideo::QueueFamilyIndices indices;
+
+	auto qfprops = phys_dev.getQueueFamilyProperties();
+
+	for( int i = 0; i < qfprops.size(); ++i ){
+		if( qfprops[i].queueFlags & vk::QueueFlagBits::eGraphics )
+			indices.graphics = i;
+
+		if( indices.complete())
+			break;
+	}
+
+	return indices;
 }
 
 void SpaceApplication::main_loop(){
