@@ -25,7 +25,8 @@
 #ifndef CHANNELS
 #define CHANNELS		\
 	CHANNEL( Default )	\
-	CHANNEL( Video )
+	CHANNEL( Video )	\
+	CHANNEL( Config )
 #endif //CHANNELS
 
 #ifndef LOGLEVELS
@@ -52,12 +53,21 @@ namespace LogLevel {
 	};
 }
 
-enum class Options {
-	Dummy,
+#ifndef CFGOPTIONS
+#define CFGOPTIONS			\
+	CFGOPTION( xres )		\
+	CFGOPTION( yres )		\
+	CFGOPTION( fullscreen )
+#endif //CFGOPTIONS
+
+enum class CfgOption {
+	#define CFGOPTION( a ) a,
+	CFGOPTIONS
+	#undef CFGOPTION
 };
 
 extern Logger::Logger<LogChannel> logger;
-extern std::unique_ptr<Config::Config<Options>> options;
+extern std::unique_ptr<Config::Config<CfgOption>> config;
 
 namespace Logger {
 	std::string channel_to_string( LogChannel channel );

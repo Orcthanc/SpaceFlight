@@ -17,7 +17,7 @@
 #include "Util.hpp"
 
 Logger::Logger<LogChannel> logger;
-std::unique_ptr<Config::Config<Options>> options;
+std::unique_ptr<Config::Config<CfgOption>> config;
 
 std::string Logger::channel_to_string( LogChannel channel ){
 	switch( channel ){

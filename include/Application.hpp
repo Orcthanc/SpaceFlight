@@ -15,6 +15,12 @@
  */
 #pragma once
 
+#include "Util.hpp"
+
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#include <vulkan/vulkan.hpp>
+
 /**
  *	Class representing the whole application
  */
@@ -26,7 +32,13 @@ struct SpaceApplication {
 		void operator()();
 
 	private:
+		void init_window();
 		void init_vk();
 		void main_loop();
-		void deinit_vk();
+		void cleanup();
+
+		void create_instance();
+
+		GLFWwindow* window;
+		vk::UniqueInstance instance;
 };
