@@ -42,6 +42,8 @@ void SpaceApplication::init_vk(){
 
 	create_instance();
 	choose_physical_dev({});
+	create_device();
+	graphics_queue = device->getQueue( queue_indices.graphics.value(), 0 );
 }
 
 void SpaceApplication::create_instance(){
@@ -146,6 +148,30 @@ SpaceAppVideo::QueueFamilyIndices SpaceApplication::find_queue_families( vk::Phy
 	}
 
 	return indices;
+}
+
+void SpaceApplication::create_device(){
+	queue_indices = find_queue_families( phys_dev );
+	const float priorities[] = { 1.0f };
+
+	vk::DeviceQueueCreateInfo dev_q_cr_inf( {}, queue_indices.graphics.value(), 1, priorities );
+
+	vk::PhysicalDeviceFeatures features;
+
+	std::vector<const char*> dev_exts = {
+		"VK_KHR_swapchain",
+	};
+
+	vk::DeviceCreateInfo dev_cr_inf(
+			{},
+			1, &dev_q_cr_inf,
+			0, nullptr,
+			dev_exts.size(), dev_exts.data(),
+			&features
+		);
+
+	device = phys_dev.createDeviceUnique( dev_cr_inf );
+	logger << LogChannel::Video << LogLevel::Info << "Created a logical device";
 }
 
 void SpaceApplication::main_loop(){
