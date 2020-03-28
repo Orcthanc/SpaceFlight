@@ -48,12 +48,15 @@ void SpaceApplication::create_instance(){
 #ifndef NDEBUG
 
 	auto av_layers = vk::enumerateInstanceLayerProperties();
-	auto lmsg = logger << LogChannel::Video << LogLevel::Verbose << "Available debug layers:";
+	{
+		Logger::LoggerHelper lmsg = logger << LogChannel::Video << LogLevel::Verbose;
+		lmsg << "Available debug layers:";
 
-	for( auto& l: av_layers )
-		lmsg << "\n\t" << l.layerName;
+		for( auto& l: av_layers )
+			lmsg << "\n\t" << l.layerName;
+	}
 
-	const std::vector<const char*> layers = { "VK_LAYER_KHRONOS_validation", "VK_LAYER_LUNARG_api_dump" };
+	const std::vector<const char*> layers = { "VK_LAYER_LUNARG_standard_validation", "VK_LAYER_LUNARG_api_dump" };
 #elif //NDEBUG
 	const std::vector<const char*> layers;
 #endif //NDEBUG

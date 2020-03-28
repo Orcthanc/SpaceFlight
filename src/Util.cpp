@@ -33,24 +33,24 @@ std::string Logger::level_to_string( LogLevel::LogLevel level ){
 #if COLOR_CONSOLE
 	switch( level ){
 		case Verbose:
-			return "\033[90mVerbose  \033[0m";
+			return "\033[90m Verbose ";
 		case Info:
-			return "Info     ";
+			return "   Info  ";
 		case Warning:
-			return "\033[33mWarning  \033[0m";
+			return "\033[33m Warning \033[0m";
 		case Error:
-			return "\033[31mError    \033[0m";
+			return "\033[31m  Error  \033[0m";
 		case Critical:
 			return "\033[1;31mCritical \033[0m";
 		default:
-			return "Unknown loglevel level encountered";
+			return "Unknown loglevel " + to_string( level ) + " encountered";
 	}
 #elif
 	switch( level ){
 		#define LOGLEVEL( a ) case a: return #a;
 		LOGLEVELS
 		default:
-			return "Unknown loglevel level encountered";
+			return "Unknown loglevel " + to_string( level ) + " encountered";
 	}
 #endif
 }
