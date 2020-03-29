@@ -49,6 +49,7 @@ void SpaceApplication::init_vk(){
 	graphics_queue = device->getQueue( queue_indices.graphics.value(), 0 );
 	present_queue = device->getQueue( queue_indices.present.value(), 0 );
 	create_swapchain();
+	create_image_views();
 }
 
 void SpaceApplication::create_instance(){
@@ -290,6 +291,30 @@ vk::Extent2D SpaceApplication::choose_swapchain_extent(){
 			std::min( swapchain_support.capabilities.maxImageExtent.height, window_size.height ));
 
 	return window_size;
+}
+
+void SpaceApplication::create_image_views(){
+	swapchain_img_views.clear();
+
+	for( size_t i = 0; i < swapchain_imgs.size(); ++i ){
+		vk::ImageViewCreateInfo cr_inf;
+		cr_inf.image = swapchain_imgs[i];
+		cr_inf.viewType = vk::ImageViewType::e2D;
+		cr_inf.format = swapchain_img_fmt;
+		cr_inf.components = vk::ComponentMapping(
+				vk::ComponentSwizzle::eIdentity,
+				vk::ComponentSwizzle::eIdentity,
+				vk::ComponentSwizzle::eIdentity,
+				vk::ComponentSwizzle::eIdentity );
+		cr_inf.subresourceRange = vk::ImageSubresourceRange(
+				vk::ImageAspectFlagBits::eColor,
+				0, 1,
+				0, 1);
+
+		swapchain_img_views.push_back( device->createImageViewUnique( cr_inf ));
+	}
+
+	logger << LogChannel::Video << LogLevel::Info << "Created " << swapchain_imgs.size() << " image views";
 }
 
 void SpaceApplication::main_loop(){
