@@ -19,6 +19,9 @@
 Logger::Logger<LogChannel> logger;
 std::unique_ptr<Config::Config<CfgOption>> config;
 
+uint32_t Resolution::xres;
+uint32_t Resolution::yres;
+
 std::string Logger::channel_to_string( LogChannel channel ){
 	switch( channel ){
 		#define CHANNEL( a ) case LogChannel::a: return #a;

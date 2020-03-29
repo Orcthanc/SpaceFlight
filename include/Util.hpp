@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <algorithm>
 
 #include "Logger.hpp"
 #include "Parser.hpp"
@@ -68,6 +69,10 @@ enum class CfgOption {
 
 extern Logger::Logger<LogChannel> logger;
 extern std::unique_ptr<Config::Config<CfgOption>> config;
+
+namespace Resolution {
+	extern uint32_t xres, yres;
+}
 
 namespace Logger {
 	std::string channel_to_string( LogChannel channel );

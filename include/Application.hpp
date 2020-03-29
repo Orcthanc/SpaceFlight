@@ -44,15 +44,25 @@ struct SpaceApplication {
 		void choose_physical_dev( const std::vector<vk::ExtensionProperties>& required_exts );
 		SpaceAppVideo::QueueFamilyIndices find_queue_families( vk::PhysicalDevice phys_dev );
 		void create_device();
+		void create_swapchain();
+
+		vk::SurfaceFormatKHR choose_swapchain_surface_format();
+		vk::PresentModeKHR choose_swapchain_present_mode();
+		vk::Extent2D choose_swapchain_extent();
 
 		GLFWwindow* window;
 		vk::UniqueInstance instance;
 		vk::UniqueSurfaceKHR surface;
 		vk::PhysicalDevice phys_dev;
+		SpaceAppVideo::SwapchainDetails swapchain_support;
 		vk::UniqueDevice device;
 		SpaceAppVideo::QueueFamilyIndices queue_indices;
 		vk::Queue graphics_queue;
 		vk::Queue present_queue;
+		vk::UniqueSwapchainKHR swapchain;
+		std::vector<vk::Image> swapchain_imgs;
+		vk::Format swapchain_img_fmt;
+		vk::Extent2D swapchain_img_size;
 
 		std::vector<const char*> dev_exts = {
 			"VK_KHR_swapchain",

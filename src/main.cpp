@@ -49,6 +49,9 @@ int main( int argc, char** argv ){
 
 	logger << LogChannel::Config << LogLevel::Info << "Succesfully read config";
 
+	Resolution::xres = std::stoi( config->options.at( CfgOption::xres ));
+	Resolution::yres = std::stoi( config->options.at( CfgOption::yres ));
+
 	SpaceApplication app;
 
 	app();

@@ -32,8 +32,8 @@ void SpaceApplication::init_window(){
 	glfwInit();
 	glfwWindowHint( GLFW_CLIENT_API, GLFW_NO_API );
 	window = glfwCreateWindow(
-			std::stoi( config->options.at( CfgOption::xres )),
-			std::stoi( config->options.at( CfgOption::yres )),
+			Resolution::xres,
+			Resolution::yres,
 			"SpaceApp", nullptr, nullptr );
 
 
@@ -48,6 +48,7 @@ void SpaceApplication::init_vk(){
 	create_device();
 	graphics_queue = device->getQueue( queue_indices.graphics.value(), 0 );
 	present_queue = device->getQueue( queue_indices.present.value(), 0 );
+	create_swapchain();
 }
 
 void SpaceApplication::create_instance(){
@@ -63,8 +64,8 @@ void SpaceApplication::create_instance(){
 			lmsg << "\n\t" << l.layerName;
 	}
 
-	const std::vector<const char*> layers = { 
-		"VK_LAYER_LUNARG_standard_validation", 
+	const std::vector<const char*> layers = {
+		"VK_LAYER_LUNARG_standard_validation",
 //		"VK_LAYER_LUNARG_api_dump",
 	};
 #elif //NDEBUG
@@ -156,6 +157,7 @@ void SpaceApplication::choose_physical_dev( const std::vector<vk::ExtensionPrope
 			properties.deviceName << " with score " << score;
 
 		if( score > best_score ){
+			swapchain_support = swapchain_details;
 			best_name = properties.deviceName;
 			best_score = score;
 			this->phys_dev = phys_dev;
@@ -208,6 +210,86 @@ void SpaceApplication::create_device(){
 
 	device = phys_dev.createDeviceUnique( dev_cr_inf );
 	logger << LogChannel::Video << LogLevel::Info << "Created a logical device";
+}
+
+void SpaceApplication::create_swapchain(){
+	vk::SurfaceFormatKHR format = choose_swapchain_surface_format();
+	vk::PresentModeKHR present_mode = choose_swapchain_present_mode();
+	vk::Extent2D extent = choose_swapchain_extent();
+
+	uint32_t image_count = swapchain_support.capabilities.minImageCount + 1;
+	if( swapchain_support.capabilities.maxImageCount > 0 && swapchain_support.capabilities.maxImageCount < image_count )
+		image_count = swapchain_support.capabilities.maxImageCount;
+
+	vk::SwapchainCreateInfoKHR cr_inf( 
+			{},
+			*surface,
+			image_count,
+			format.format,
+			format.colorSpace,
+			extent,
+			1,
+			vk::ImageUsageFlagBits::eColorAttachment,
+			vk::SharingMode::eExclusive,
+			{},
+			nullptr,
+			swapchain_support.capabilities.currentTransform,
+			vk::CompositeAlphaFlagBitsKHR::eOpaque,
+			present_mode,
+			true,
+			{} );
+
+	uint32_t queue_family_indices[] = { queue_indices.graphics.value(), queue_indices.present.value() };
+	if( queue_indices.graphics != queue_indices.present ){
+		cr_inf.imageSharingMode = vk::SharingMode::eConcurrent;
+		cr_inf.queueFamilyIndexCount = 2;
+		cr_inf.pQueueFamilyIndices = queue_family_indices;
+	}
+
+	swapchain = device->createSwapchainKHRUnique( cr_inf );
+	logger << LogChannel::Video << LogLevel::Info << "Successfully created a swapchain";
+
+	swapchain_imgs = device->getSwapchainImagesKHR( *swapchain );
+	swapchain_img_fmt = format.format;
+	swapchain_img_size = extent;
+}
+
+vk::SurfaceFormatKHR SpaceApplication::choose_swapchain_surface_format(){
+	for( const auto& format: swapchain_support.formats ){
+		if( format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear )
+			return format;
+	}
+
+	logger << LogChannel::Video << LogLevel::Warning <<
+		"Preferred surfaceformat/colorspace not available. Falling back to " <<
+		vk::to_string( swapchain_support.formats[0].format ) << " / " <<
+		vk::to_string( swapchain_support.formats[0].format );
+
+	return swapchain_support.formats[0];
+}
+
+vk::PresentModeKHR SpaceApplication::choose_swapchain_present_mode(){
+	for( const auto& mode: swapchain_support.present_modes ){
+		if( mode == vk::PresentModeKHR::eMailbox )
+			return mode;
+	}
+	logger << LogChannel::Video << LogLevel::Warning <<
+		"Preferred presentmode not available. Falling back to FIFO";
+	return vk::PresentModeKHR::eFifo;
+}
+
+vk::Extent2D SpaceApplication::choose_swapchain_extent(){
+	if( swapchain_support.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max() ){
+		return swapchain_support.capabilities.currentExtent;
+	}
+
+	vk::Extent2D window_size{ Resolution::xres, Resolution::yres };
+	window_size.width = std::max( swapchain_support.capabilities.minImageExtent.width,
+			std::min( swapchain_support.capabilities.maxImageExtent.width, window_size.width ));
+	window_size.height = std::max( swapchain_support.capabilities.minImageExtent.height,
+			std::min( swapchain_support.capabilities.maxImageExtent.height, window_size.height ));
+
+	return window_size;
 }
 
 void SpaceApplication::main_loop(){

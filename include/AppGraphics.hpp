@@ -30,6 +30,7 @@ namespace SpaceAppVideo {
 	};
 
 	struct SwapchainDetails {
+		SwapchainDetails() = default;
 		SwapchainDetails( vk::PhysicalDevice phys_dev, vk::UniqueSurfaceKHR& surface );
 
 		vk::SurfaceCapabilitiesKHR capabilities;
