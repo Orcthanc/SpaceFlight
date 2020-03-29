@@ -19,5 +19,11 @@
 using namespace SpaceAppVideo;
 
 bool QueueFamilyIndices::complete(){
-	return graphics.has_value();
+	return graphics.has_value() && present.has_value();
+}
+
+SwapchainDetails::SwapchainDetails( vk::PhysicalDevice phys_dev, vk::UniqueSurfaceKHR& surf ){
+	capabilities = phys_dev.getSurfaceCapabilitiesKHR( *surf );
+	formats = phys_dev.getSurfaceFormatsKHR( *surf );
+	present_modes = phys_dev.getSurfacePresentModesKHR( *surf );
 }

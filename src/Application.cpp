@@ -17,6 +17,8 @@
 #include "Util.hpp"
 #include "Application.hpp"
 
+#include <set>
+
 void SpaceApplication::operator()(){
 	init_window();
 	init_vk();
@@ -41,9 +43,11 @@ void SpaceApplication::init_vk(){
 	logger << LogChannel::Video << LogLevel::Info << "Started initialising Vulkan";
 
 	create_instance();
+	create_surface();
 	choose_physical_dev({});
 	create_device();
 	graphics_queue = device->getQueue( queue_indices.graphics.value(), 0 );
+	present_queue = device->getQueue( queue_indices.present.value(), 0 );
 }
 
 void SpaceApplication::create_instance(){
@@ -76,7 +80,7 @@ void SpaceApplication::create_instance(){
 	auto av_exts = vk::enumerateInstanceExtensionProperties();
 	{
 		Logger::LoggerHelper lmsg = logger << LogChannel::Video << LogLevel::Verbose;
-		lmsg << "Available extensions:";
+		lmsg << "Available instance extensions:";
 
 		for( auto& l: av_exts )
 			lmsg << "\n\t" << l.extensionName;
@@ -87,6 +91,25 @@ void SpaceApplication::create_instance(){
 	instance = vk::createInstanceUnique( instance_cr_inf );
 
 	logger << LogChannel::Video << LogLevel::Info << "Created instance";
+}
+
+void SpaceApplication::create_surface(){
+	VkSurfaceKHR temp;
+	glfwCreateWindowSurface( *instance, window, nullptr, &temp );
+	surface = vk::UniqueSurfaceKHR{ temp, *instance };
+	logger << LogChannel::Video << LogLevel::Info << "Created surface";
+}
+
+static std::set<std::string> get_missing_dev_extensions( vk::PhysicalDevice dev, const std::vector<const char*>& extensions ){
+	auto available_exts = dev.enumerateDeviceExtensionProperties();
+
+	std::set<std::string> req_exts{ extensions.begin(), extensions.end() };
+
+	for( auto& ext: available_exts ){
+		req_exts.erase( ext.extensionName );
+	}
+
+	return req_exts;
 }
 
 void SpaceApplication::choose_physical_dev( const std::vector<vk::ExtensionProperties>& required_exts ){
@@ -106,12 +129,20 @@ void SpaceApplication::choose_physical_dev( const std::vector<vk::ExtensionPrope
 			}
 		}
 
-		auto qfindices = find_queue_families( phys_dev );
-		if( !qfindices.complete() )
-			supported = false;
-
 		if( !supported )
 			continue;
+
+		auto qfindices = find_queue_families( phys_dev );
+		if( !qfindices.complete() )
+			continue;
+
+		if( !get_missing_dev_extensions( phys_dev, dev_exts ).empty() )
+			continue;
+
+		SpaceAppVideo::SwapchainDetails swapchain_details( phys_dev, surface );
+		if( swapchain_details.formats.empty() || swapchain_details.present_modes.empty() )
+			continue;
+
 
 		auto properties = phys_dev.getProperties();
 		if( properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu )
@@ -143,6 +174,9 @@ SpaceAppVideo::QueueFamilyIndices SpaceApplication::find_queue_families( vk::Phy
 		if( qfprops[i].queueFlags & vk::QueueFlagBits::eGraphics )
 			indices.graphics = i;
 
+		if( phys_dev.getSurfaceSupportKHR( i, *surface ))
+			indices.present = i;
+
 		if( indices.complete())
 			break;
 	}
@@ -152,19 +186,21 @@ SpaceAppVideo::QueueFamilyIndices SpaceApplication::find_queue_families( vk::Phy
 
 void SpaceApplication::create_device(){
 	queue_indices = find_queue_families( phys_dev );
+
+	std::vector<vk::DeviceQueueCreateInfo> dev_q_cr_infs;
+	std::set<uint32_t> unique_families{ queue_indices.graphics.value(), queue_indices.present.value() };
+
 	const float priorities[] = { 1.0f };
 
-	vk::DeviceQueueCreateInfo dev_q_cr_inf( {}, queue_indices.graphics.value(), 1, priorities );
+	for( auto qf: unique_families ){
+		dev_q_cr_infs.push_back({ {}, qf, 1, priorities });
+	}
 
 	vk::PhysicalDeviceFeatures features;
 
-	std::vector<const char*> dev_exts = {
-		"VK_KHR_swapchain",
-	};
-
 	vk::DeviceCreateInfo dev_cr_inf(
 			{},
-			1, &dev_q_cr_inf,
+			dev_q_cr_infs.size(), dev_q_cr_infs.data(),
 			0, nullptr,
 			dev_exts.size(), dev_exts.data(),
 			&features

@@ -40,14 +40,21 @@ struct SpaceApplication {
 		void cleanup();
 
 		void create_instance();
+		void create_surface();
 		void choose_physical_dev( const std::vector<vk::ExtensionProperties>& required_exts );
 		SpaceAppVideo::QueueFamilyIndices find_queue_families( vk::PhysicalDevice phys_dev );
 		void create_device();
 
 		GLFWwindow* window;
 		vk::UniqueInstance instance;
+		vk::UniqueSurfaceKHR surface;
 		vk::PhysicalDevice phys_dev;
 		vk::UniqueDevice device;
 		SpaceAppVideo::QueueFamilyIndices queue_indices;
 		vk::Queue graphics_queue;
+		vk::Queue present_queue;
+
+		std::vector<const char*> dev_exts = {
+			"VK_KHR_swapchain",
+		};
 };
