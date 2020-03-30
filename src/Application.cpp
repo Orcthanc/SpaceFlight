@@ -32,8 +32,8 @@ void SpaceApplication::init_window(){
 	glfwInit();
 	glfwWindowHint( GLFW_CLIENT_API, GLFW_NO_API );
 	window = glfwCreateWindow(
-			Resolution::xres,
-			Resolution::yres,
+			config.res.x,
+			config.res.y,
 			"SpaceApp", nullptr, nullptr );
 
 
@@ -284,7 +284,7 @@ vk::Extent2D SpaceApplication::choose_swapchain_extent(){
 		return swapchain_support.capabilities.currentExtent;
 	}
 
-	vk::Extent2D window_size{ Resolution::xres, Resolution::yres };
+	vk::Extent2D window_size{ config.res.x, config.res.y };
 	window_size.width = std::max( swapchain_support.capabilities.minImageExtent.width,
 			std::min( swapchain_support.capabilities.maxImageExtent.width, window_size.width ));
 	window_size.height = std::max( swapchain_support.capabilities.minImageExtent.height,

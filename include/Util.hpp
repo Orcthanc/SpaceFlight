@@ -21,6 +21,47 @@
 #include <algorithm>
 
 #include "Logger.hpp"
+
+#ifndef CFGOPTIONS
+#define CFGOPTIONS												\
+CFGOPTION( res, ::Config::Resolution, ::Config::Resolution{})	\
+CFGOPTION( fullscreen, bool, false )
+#endif //CFGOPTIONS
+
+namespace Config {
+	struct Resolution {
+		uint32_t x = 1920, y = 1080;
+	};
+
+	template <typename T>
+	inline std::string to_string( const T& val );
+
+	template <typename T>
+	inline T from_string( const std::string& val );
+
+	template <>
+	inline std::string to_string<Resolution>( const Resolution& val ){
+		return std::to_string( val.x ) + "x" + std::to_string( val.y );
+	}
+
+	template <>
+	inline Resolution from_string<Resolution>( const std::string& val ){
+		int i = 0;
+		bool second = false;
+		Resolution res;
+		for( auto& c: val ){
+			if( c >= '0' && c <= '9' )
+				i = i * 10 + c - '0';
+			else if(( c == 'x' || c == 'X' ) && second == false ){
+				res.x = i;
+				i = 0;
+			}
+		}
+		res.y = i;
+		return res;
+	}
+}
+
 #include "Parser.hpp"
 
 #ifndef CHANNELS
@@ -54,25 +95,8 @@ namespace LogLevel {
 	};
 }
 
-#ifndef CFGOPTIONS
-#define CFGOPTIONS			\
-	CFGOPTION( xres )		\
-	CFGOPTION( yres )		\
-	CFGOPTION( fullscreen )
-#endif //CFGOPTIONS
-
-enum class CfgOption {
-	#define CFGOPTION( a ) a,
-	CFGOPTIONS
-	#undef CFGOPTION
-};
-
 extern Logger::Logger<LogChannel> logger;
-extern std::unique_ptr<Config::Config<CfgOption>> config;
-
-namespace Resolution {
-	extern uint32_t xres, yres;
-}
+extern Config::Config config;
 
 namespace Logger {
 	std::string channel_to_string( LogChannel channel );
