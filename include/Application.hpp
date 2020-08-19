@@ -21,6 +21,8 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.hpp>
 
+#include <filesystem>
+
 #include "AppGraphics.hpp"
 
 /**
@@ -39,6 +41,8 @@ struct SpaceApplication {
 		void main_loop();
 		void cleanup();
 
+		void draw_frame();
+
 		void create_instance();
 		void create_surface();
 		void choose_physical_dev( const std::vector<vk::ExtensionProperties>& required_exts );
@@ -46,6 +50,13 @@ struct SpaceApplication {
 		void create_device();
 		void create_swapchain();
 		void create_image_views();
+		void create_render_pass();
+		vk::UniqueShaderModule create_shader_module( const std::filesystem::path& path );
+		void create_pipeline();
+		void create_framebuffers();
+		void create_command_pool();
+		void alloc_command_buffers();
+		void create_semaphores();
 
 		vk::SurfaceFormatKHR choose_swapchain_surface_format();
 		vk::PresentModeKHR choose_swapchain_present_mode();
@@ -65,6 +76,17 @@ struct SpaceApplication {
 		vk::Format swapchain_img_fmt;
 		vk::Extent2D swapchain_img_size;
 		std::vector<vk::UniqueImageView> swapchain_img_views;
+		vk::UniqueRenderPass render_pass;
+		vk::UniquePipelineLayout pipeline_layout;
+		std::vector<vk::UniquePipeline> pipelines;
+		std::vector<vk::UniqueFramebuffer> swapchain_framebuffers;
+		vk::UniqueCommandPool command_pool;
+		std::vector<vk::UniqueCommandBuffer> command_buffers;
+
+		std::vector<vk::UniqueSemaphore> img_available_sema;
+		std::vector<vk::UniqueSemaphore> img_ready_sema;
+		std::vector<vk::UniqueFence> inflight_fences;
+		std::vector<vk::Fence> inflight_imgs;
 
 		std::vector<const char*> dev_exts = {
 			"VK_KHR_swapchain",

@@ -19,6 +19,8 @@
 #include <optional>
 
 namespace SpaceAppVideo {
+	constexpr int MAX_FRAMES_IN_FLIGHT{ 2 };
+
 	/**
 	 *	Struct to save queue family indices
 	 */
