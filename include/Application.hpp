@@ -51,6 +51,7 @@ struct SpaceApplication {
 		void create_swapchain();
 		void create_image_views();
 		void create_render_pass();
+		void recreate_swapchain();
 		vk::UniqueShaderModule create_shader_module( const std::filesystem::path& path );
 		void create_pipeline();
 		void create_framebuffers();

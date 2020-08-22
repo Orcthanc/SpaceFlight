@@ -291,7 +291,16 @@ vk::PresentModeKHR SpaceApplication::choose_swapchain_present_mode(){
 
 vk::Extent2D SpaceApplication::choose_swapchain_extent(){
 	if( swapchain_support.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max() ){
+		config.res.x = swapchain_support.capabilities.currentExtent.width;
+		config.res.y = swapchain_support.capabilities.currentExtent.height;
 		return swapchain_support.capabilities.currentExtent;
+	}
+
+	if( !config.fullscreen ){
+		int width, height;
+		glfwGetFramebufferSize( window, &width, &height );
+		config.res.x = width;
+		config.res.y = height;
 	}
 
 	vk::Extent2D window_size{ config.res.x, config.res.y };
@@ -390,6 +399,28 @@ vk::UniqueShaderModule SpaceApplication::create_shader_module( const fs::path& p
 	vk::ShaderModuleCreateInfo cr_inf( vk::ShaderModuleCreateFlags{}, code.size(), reinterpret_cast<const uint32_t*>( code.data() ));
 
 	return device->createShaderModuleUnique( cr_inf );
+}
+
+void SpaceApplication::recreate_swapchain(){
+	swapchain_support = { phys_dev, surface };
+
+	int width = 0, height = 0;
+    glfwGetFramebufferSize(window, &width, &height);
+    while (width == 0 || height == 0) {
+        glfwGetFramebufferSize(window, &width, &height);
+        glfwWaitEvents();
+    }
+
+    device->waitIdle();
+
+	create_swapchain();
+	create_image_views();
+	create_render_pass();
+	create_pipeline();
+	create_framebuffers();
+	alloc_command_buffers();
+
+	logger << LogChannel::Video << LogLevel::Info << "Recreated swapchain";
 }
 
 void SpaceApplication::create_pipeline(){
@@ -576,6 +607,11 @@ void SpaceApplication::alloc_command_buffers(){
 }
 
 void SpaceApplication::create_semaphores(){
+	img_available_sema.clear();
+	img_ready_sema.clear();
+	inflight_fences.clear();
+	inflight_imgs.clear();
+
 	vk::SemaphoreCreateInfo sema_cr_inf( vk::SemaphoreCreateFlags{} );
 	vk::FenceCreateInfo fence_cr_inf( vk::FenceCreateFlagBits::eSignaled );
 
@@ -610,7 +646,13 @@ void SpaceApplication::draw_frame(){
 	if( vk::Result::eSuccess != device->waitForFences( 1, &*inflight_fences[current_frame], VK_TRUE, UINT64_MAX ))
 		throw std::runtime_error( "Wait for fence failed" );
 	
-	auto img = device->acquireNextImageKHR( *swapchain, UINT64_MAX, *img_available_sema[current_frame], {} ).value;
+	auto imgres = device->acquireNextImageKHR( *swapchain, UINT64_MAX, *img_available_sema[current_frame], {} );
+
+	if( imgres.result == vk::Result::eErrorOutOfDateKHR ){
+		recreate_swapchain();
+		return;
+	}
+	auto img = imgres.value;
 
 	if( inflight_imgs[img] != vk::Fence{} )
 		if( vk::Result::eSuccess != device->waitForFences( 1, &inflight_imgs[img], VK_TRUE, UINT64_MAX ))
@@ -637,10 +679,19 @@ void SpaceApplication::draw_frame(){
 	std::vector indices{ img };
 	vk::PresentInfoKHR pres_inf( signal_semas, swapchains, indices, {} );
 
-	switch( present_queue.presentKHR( pres_inf )){
-		default:
-			break;
+	try {
+		switch( present_queue.presentKHR( pres_inf )){
+			case vk::Result::eErrorOutOfDateKHR:
+			case vk::Result::eSuboptimalKHR:
+				recreate_swapchain();
+				break;
+			default:
+				break;
+		}
+	} catch( vk::OutOfDateKHRError& e ){
+		recreate_swapchain();
 	}
+
 
 	current_frame = ( current_frame + 1 ) % SpaceAppVideo::MAX_FRAMES_IN_FLIGHT;
 }
