@@ -19,6 +19,7 @@
 
 #include <set>
 #include <fstream>
+#include <string.h>
 
 namespace fs = std::filesystem;
 
@@ -57,6 +58,7 @@ void SpaceApplication::init_vk(){
 	create_pipeline();
 	create_framebuffers();
 	create_command_pool();
+	create_vertex_buffers();
 	alloc_command_buffers();
 	create_semaphores();
 }
@@ -362,7 +364,7 @@ void SpaceApplication::create_render_pass(){
 			{}
 		);
 
-	vk::SubpassDependency sub_dependency( 
+	vk::SubpassDependency sub_dependency(
 			VK_SUBPASS_EXTERNAL, 0,
 			vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eColorAttachmentOutput,
 			{}, vk::AccessFlagBits::eColorAttachmentWrite,
@@ -405,13 +407,13 @@ void SpaceApplication::recreate_swapchain(){
 	swapchain_support = { phys_dev, surface };
 
 	int width = 0, height = 0;
-    glfwGetFramebufferSize(window, &width, &height);
-    while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(window, &width, &height);
-        glfwWaitEvents();
-    }
+	glfwGetFramebufferSize(window, &width, &height);
+	while (width == 0 || height == 0) {
+		glfwGetFramebufferSize(window, &width, &height);
+		glfwWaitEvents();
+	}
 
-    device->waitIdle();
+	device->waitIdle();
 
 	create_swapchain();
 	create_image_views();
@@ -434,12 +436,13 @@ void SpaceApplication::create_pipeline(){
 			{ {}, vk::ShaderStageFlagBits::eFragment, *frag, "main", {} },
 		};
 
+	auto bindings = SpaceAppVideo::Vertex::getBindingDesc();
+	auto attribs = SpaceAppVideo::Vertex::getAttribDescs();
+
 	vk::PipelineVertexInputStateCreateInfo vertex_input_info(
 			{},
-			0,
-			nullptr,
-			0,
-			nullptr
+			bindings,
+			attribs
 		);
 
 	vk::PipelineInputAssemblyStateCreateInfo input_assembly_info(
@@ -575,6 +578,45 @@ void SpaceApplication::create_command_pool(){
 	logger << LogChannel::Video << LogLevel::Info << "Created command pool";
 }
 
+void SpaceApplication::create_vertex_buffers(){
+	vk::BufferCreateInfo buf_cr_inf(
+			{},
+			sizeof( vertices[0] ) * vertices.size(),
+			vk::BufferUsageFlagBits::eVertexBuffer,
+			vk::SharingMode::eExclusive,
+			0,
+			nullptr
+		);
+
+	vertex_buffer = device->createBufferUnique( buf_cr_inf );
+
+	auto memreqs = device->getBufferMemoryRequirements( *vertex_buffer );
+
+	vk::MemoryAllocateInfo mem_alloc_inf(
+			memreqs.size,
+			find_mem_type( memreqs.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent )
+		);
+
+	vertex_buffer_memory = device->allocateMemoryUnique( mem_alloc_inf );
+	device->bindBufferMemory( *vertex_buffer, *vertex_buffer_memory, 0 );
+
+	auto data = device->mapMemory( *vertex_buffer_memory, 0, buf_cr_inf.size, {} );
+	memcpy( data, vertices.data(), static_cast<size_t>( vertices.size() ) * sizeof( SpaceAppVideo::Vertex ));
+	device->unmapMemory( *vertex_buffer_memory );
+}
+
+uint32_t SpaceApplication::find_mem_type( uint32_t type_filter, vk::MemoryPropertyFlags flags ){
+	auto memprops = phys_dev.getMemoryProperties();
+
+	for( auto memIndex = 0; auto&& m: memprops.memoryTypes ){
+		if(( type_filter & ( 1 << memIndex )) && (( m.propertyFlags & flags ) == flags ))
+			return memIndex;
+		++memIndex;
+	}
+
+	throw std::runtime_error( "No memory available" );
+}
+
 void SpaceApplication::alloc_command_buffers(){
 	vk::CommandBufferAllocateInfo alloc_inf(
 			*command_pool,
@@ -599,7 +641,12 @@ void SpaceApplication::alloc_command_buffers(){
 
 		command_buffers[i]->beginRenderPass( r_begin_info, vk::SubpassContents::eInline );
 		command_buffers[i]->bindPipeline( vk::PipelineBindPoint::eGraphics, *pipelines[0] );
-		command_buffers[i]->draw( 3, 1, 0, 0 );
+		std::vector<vk::Buffer> buffers{ *vertex_buffer };
+		std::vector<vk::DeviceSize> offsets{ 0 };
+		command_buffers[i]->bindVertexBuffers( 0, buffers, offsets );
+
+
+		command_buffers[i]->draw( vertices.size(), 1, 0, 0 );
 
 		command_buffers[i]->endRenderPass();
 		command_buffers[i]->end();
@@ -645,7 +692,7 @@ void SpaceApplication::draw_frame(){
 	static size_t current_frame = 0;
 	if( vk::Result::eSuccess != device->waitForFences( 1, &*inflight_fences[current_frame], VK_TRUE, UINT64_MAX ))
 		throw std::runtime_error( "Wait for fence failed" );
-	
+
 	auto imgres = device->acquireNextImageKHR( *swapchain, UINT64_MAX, *img_available_sema[current_frame], {} );
 
 	if( imgres.result == vk::Result::eErrorOutOfDateKHR ){

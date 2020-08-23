@@ -56,6 +56,8 @@ struct SpaceApplication {
 		void create_pipeline();
 		void create_framebuffers();
 		void create_command_pool();
+		void create_vertex_buffers();
+		uint32_t find_mem_type( uint32_t type_filter, vk::MemoryPropertyFlags flags );
 		void alloc_command_buffers();
 		void create_semaphores();
 
@@ -83,6 +85,8 @@ struct SpaceApplication {
 		std::vector<vk::UniqueFramebuffer> swapchain_framebuffers;
 		vk::UniqueCommandPool command_pool;
 		std::vector<vk::UniqueCommandBuffer> command_buffers;
+		vk::UniqueBuffer vertex_buffer;
+		vk::UniqueDeviceMemory vertex_buffer_memory;
 
 		std::vector<vk::UniqueSemaphore> img_available_sema;
 		std::vector<vk::UniqueSemaphore> img_ready_sema;
@@ -91,5 +95,12 @@ struct SpaceApplication {
 
 		std::vector<const char*> dev_exts = {
 			"VK_KHR_swapchain",
+		};
+
+
+		std::vector<SpaceAppVideo::Vertex> vertices = {
+			{{ -0.5, -0.5,  0.0 }, { 1, 0, 0 }},
+			{{  0.5, -0.5,  0.0 }, { 0, 1, 0 }},
+			{{  0.0,  0.5,  0.0 }, { 0, 0, 1 }},
 		};
 };
